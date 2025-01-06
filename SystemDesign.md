@@ -1,97 +1,215 @@
-# Design Patterns
+# Chat Application - Low Level Design Documentation
 
-Well-proven solutions to commonly occurring problems in software design.
+## Table of Contents
+1. [Overview](#overview)
+2. [System Components](#system-components)
+3. [Class Details](#class-details)
+4. [Design Patterns & Principles](#design-patterns--principles)
+5. [Implementation Guide](#implementation-guide)
 
-## Categorization of Design Patterns
-1. **Creational Design Patterns**:
-       - Factory Pattern
-       - Builder Pattern
-       - Singleton Pattern
-2. **Structural Design Patterns**:
-       - Proxy Pattern
-       - Adapter Pattern
-3. **Behavioral Design Patterns**:
-       - Observer Pattern
-       - State Pattern
-       - Iterator Pattern
+## Overview
 
----
+This document outlines the low-level design of a chat application that supports:
+- Private messaging between users
+- Group chat functionality
+- Friend request system
+- User management
 
-## Singleton Design Pattern
-1. Constructor is private.
-2. Field to store the object is private.
-3. Object is created with the help of a method.
+## System Components
 
-### Initialization Approaches:
-- **Eager way** and **Lazy way** of object initialization are available but are **not thread-safe**.
-- To make it thread-safe, use:
-       - Method synchronization
-       - Block synchronization
+### Core Services
+- **UserService**: Central management of user operations
+- **Chat System**: Handles message exchange
+- **Friend Request System**: Manages social connections
 
-### Challenges:
-- Singleton can be broken through:
-       - Reflection (accessing and making the constructor public)
-       - Serialization & Deserialization
+### Data Models
+- Users
+- Messages
+- Chat Rooms (Private & Group)
+- Friend Requests
 
-### Solutions:
-1. If the object exists, throw an exception from inside the constructor.
-2. Use **enum** to implement Singleton.
-3. Implement the `readResolve` method.
+## Class Details
 
----
+### 1. UserService Class
+```java
+class UserService {
+    private Map usersById = new HashMap<>();
 
-## Factory or Factory Method Design Pattern
-- When there is a superclass with multiple subclasses, this pattern allows creating objects of subclasses based on input requirements.
-- Focus on creating objects for the **interface** rather than the **implementation**.
-- Promotes **loose coupling**.
+    // User Management
+    public void addUser(int userId, String name, String passHash)
+    public void removeUser(int userId)
+    
+    // Friend Request Management
+    public void addFriendRequest(int fromUserId, int toUserId)
+    public void approveFriendRequest(int fromUserId, int toUserId)
+    public void rejectFriendRequest(int fromUserId, int toUserId)
+}
+```
 
----
+**Responsibilities:**
+- User registration and removal
+- Friend request processing
+- User relationship management
 
-## Abstract Factory Design Pattern
-- A factory calls another abstract factory, where the implementation of object creation is defined and returned based on input.
-- Example:
-  employee <- EmployeeFactory <- EmployeeAbstractFactory <- AndroidFactory & WebFactory
+### 2. User Class
+```java
+class User {
+    private int userId;
+    private String name;
+    private String passHash;
+    private Map friends;
+    private Map privateChats;
+    private Map groupChats;
+    private Map receivedFriendRequests;
+    private Map sentFriendRequests;
 
+    // Messaging Methods
+    public void messageUser(int friendId, String message)
+    public void messageGroup(int groupId, String message)
+    
+    // Friend Request Methods
+    public void sendFriendRequest(AddRequest request)
+    public void receiveFriendRequest(AddRequest request)
+    public void approveFriendRequest(int friendId)
+    public void rejectFriendRequest(int friendId)
+}
+```
 
----
+**Key Features:**
+- Personal information storage
+- Friend list management
+- Chat participation
+- Friend request handling
 
-## Builder Design Pattern
-- Useful when creating objects with many attributes.
+### 3. Chat System
 
-### Problems Addressed:
-1. Need to pass many arguments to create an object.
-2. Some parameters might be optional.
-3. Factory classes become overly complex when handling heavy objects.
+#### Base Chat Class
+```java
+abstract class Chat {
+    protected int chatId;
+    protected List users;
+    protected List messages;
 
-### Solution:
-- Build objects step-by-step and finally return the object with the desired values of attributes.
+    public void addMessage(Message message)
+}
+```
 
----
+#### Private Chat Class
+```java
+class PrivateChat extends Chat {
+    public PrivateChat(int chatId, User user1, User user2)
+}
+```
 
-## Prototype Design Pattern
-- The concept is to **copy an existing object** rather than creating a new instance from scratch.
-- Creating a new object may be **costly**.
-- Saves resources by creating a clone of a heavy object.
+#### Group Chat Class
+```java
+class GroupChat extends Chat {
+    public void addUser(User user)
+    public void removeUser(User user)
+}
+```
 
-### Types of Cloning:
-1. **Shallow Copy**: Object references are copied.
-2. **Deep Copy**: The object is copied into a new object.
+### 4. Message Class
+```java
+class Message {
+    private String messageId;
+    private String message;
+    private Date timestamp;
+}
+```
 
----
+### 5. Friend Request System
+```java
+class AddRequest {
+    private int fromUserId;
+    private int toUserId;
+    private RequestStatus status;
+    private Date timestamp;
+    private User fromUser;
+}
 
-## Observer Design Pattern
-- A **behavioral design pattern**.
-- When the subject changes its state, all its dependent objects are notified.
-- Establishes a **one-to-many relationship**.
+enum RequestStatus {
+    UNREAD,
+    READ,
+    ACCEPTED,
+    REJECTED
+}
+```
 
----
+## Design Patterns & Principles
 
-## Iterator Design Pattern
-- Provides a way to access the elements of an object without exposing its underlying implementation.
+### 1. SOLID Principles Application
+- **Single Responsibility**: Each class has a focused purpose
+- **Open/Closed**: Chat system is extensible through inheritance
+- **Liskov Substitution**: Chat subtypes can be used interchangeably
+- **Interface Segregation**: Clean separation of chat functionalities
+- **Dependency Inversion**: High-level modules don't depend on details
 
----
+### 2. Design Patterns Used
+- **Observer Pattern**: For message notifications
+- **Factory Pattern**: For creating chat instances
+- **Strategy Pattern**: For message handling
 
-## Adapter Design Pattern
-- Example: Consider an iPhone lightning port and an Android USB-C port.
-- To charge an iPhone using a USB-C port, an adapter is used to bridge the incompatibility.
+## Implementation Guide
 
+### Setting Up User Management
+1. Initialize UserService
+2. Add user registration functionality
+3. Implement authentication system
+
+### Implementing Chat Features
+1. Create base Chat class
+2. Extend for PrivateChat and GroupChat
+3. Implement message handling
+
+### Friend Request System
+1. Create AddRequest handling
+2. Implement request notifications
+3. Add request processing logic
+
+### Data Storage Considerations
+- Use in-memory storage for development
+- Plan for database integration
+- Consider caching strategies
+
+### Security Implementation
+1. Password hashing
+2. Session management
+3. Message encryption
+
+## Technical Considerations
+
+### Scalability
+- Implement database sharding
+- Use message queues for async processing
+- Add caching layer
+
+### Performance
+- Optimize friend list lookups
+- Implement efficient message delivery
+- Use connection pooling
+
+### Security
+- Implement end-to-end encryption
+- Add rate limiting
+- Secure user authentication
+
+## Future Enhancements
+
+### 1. Message Features
+- Read receipts
+- Message editing
+- File sharing
+- Voice messages
+
+### 2. Group Chat Features
+- Admin roles
+- User permissions
+- Chat rules
+- Group invitations
+
+### 3. User Features
+- User profiles
+- Status updates
+- Last seen status
+- Typing indicators
